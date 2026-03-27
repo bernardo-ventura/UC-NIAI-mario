@@ -1,13 +1,8 @@
 
 # Evolved Mario Controller (Evolutionary Algorithm)
-# Fitness: 0.0
+# Fitness: 267.0
 
 def corre(action, landscape, enemies, can_jump, on_ground, Mario, Sprite, **kwargs):
-    pass
-    pass
-    if can_jump:
-        action[Mario.KEY_RIGHT] = int(True)
-    if can_jump:
-        if on_ground:
-            pass
-    action[Mario.KEY_SPEED] = int(True)
+    if enemies[11+1, 11+0] != Sprite.KIND_RED_KOOPA:
+        if enemies[11+0, 11+1] != Sprite.KIND_SPIKY_WINGED:
+            action[Mario.KEY_RIGHT] = int(True)

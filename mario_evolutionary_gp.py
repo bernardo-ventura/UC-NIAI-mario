@@ -97,6 +97,9 @@ class Expr: pass        # Expression/statement
 class Condition: pass   # Boolean condition for if-statements
 class Key: pass         # Controller key (LEFT, RIGHT, etc.)
 class Bool: pass        # Boolean value (True/False)
+class Position: pass      # (x, y) coordinates
+class Comparator: pass    # ==, !==
+class EnemyType: pass    # Type of enemy (Goomba, Koopa, etc.)
 
 # -----------------------------------------------------------------------------
 # 2. PRIMITIVES: STRING BUILDERS
@@ -113,6 +116,10 @@ def str_set_action(key, val):
     """Sets an action key to a value."""
     return f"action[{key}] = int({val})"
 
+def str_check_enemy(pos_x, pos_y, comp, enemy_type):
+    """Checks for a specific enemy type at a given position."""
+    return f"enemies[11+{pos_x}, 11+{pos_y}] {comp} {enemy_type}"
+
 # -----------------------------------------------------------------------------
 # 3. GRAMMAR CONFIGURATION
 # -----------------------------------------------------------------------------
@@ -122,6 +129,7 @@ pset = gp.PrimitiveSetTyped("MAIN", [], Expr)
 pset.addPrimitive(str_if_then, [Condition, Expr], Expr)
 pset.addPrimitive(str_sequence, [Expr, Expr], Expr)
 pset.addPrimitive(str_set_action, [Key, Bool], Expr)
+pset.addPrimitive(str_check_enemy, [Position, Position, Comparator, EnemyType], Condition)
 pset.addTerminal("pass", Expr, name="NoOp")
 
 # Basic Senses (Provided directly by the environment variables)
@@ -137,6 +145,27 @@ pset.addTerminal("Mario.KEY_JUMP", Key, name="JUMP")
 pset.addTerminal("Mario.KEY_LEFT", Key, name="LEFT")
 pset.addTerminal("Mario.KEY_DOWN", Key, name="DOWN")
 pset.addTerminal("Mario.KEY_SPEED", Key, name="SPEED")
+
+# Terminal for comparators
+pset.addTerminal("==", Comparator, name="Equals")
+pset.addTerminal("!=", Comparator, name="NotEquals")
+
+# Terminals for positions
+pset.addTerminal(-1, Position, name="PosNeg")    # Esquerda/Acima
+pset.addTerminal(0, Position, name="PosZero")    # Centro
+pset.addTerminal(1, Position, name="PosPos")     # Direita/Abaixo
+
+# Terminals for enemy types
+pset.addTerminal("Sprite.KIND_GOOMBA", EnemyType, name="Goomba")
+pset.addTerminal("Sprite.KIND_GOOMBA_WINGED", EnemyType, name="GoombaWinged")
+pset.addTerminal("Sprite.KIND_RED_KOOPA", EnemyType, name="RedKoopa")
+pset.addTerminal("Sprite.KIND_RED_KOOPA_WINGED", EnemyType, name="RedKoopaWinged")
+pset.addTerminal("Sprite.KIND_GREEN_KOOPA", EnemyType, name="GreenKoopa")
+pset.addTerminal("Sprite.KIND_GREEN_KOOPA_WINGED", EnemyType, name="GreenKoopaWinged")
+pset.addTerminal("Sprite.KIND_BULLET_BILL", EnemyType, name="BulletBill")
+pset.addTerminal("Sprite.KIND_SPIKY", EnemyType, name="Spiky")
+pset.addTerminal("Sprite.KIND_SPIKY_WINGED", EnemyType, name="SpikyWinged") 
+
 
 # TODO: Add enemy detection primitives
 # TODO: Add landscape detection primitives
