@@ -100,6 +100,7 @@ class Bool: pass        # Boolean value (True/False)
 class Position: pass      # (x, y) coordinates
 class Comparator: pass    # ==, !==
 class EnemyType: pass    # Type of enemy (Goomba, Koopa, etc.)
+class LandscapeType: pass # Type of landscape (Ground, Air, etc.)
 
 # -----------------------------------------------------------------------------
 # 2. PRIMITIVES: STRING BUILDERS
@@ -124,6 +125,10 @@ def str_if_then_else(cond, expr_true, expr_false):
     """Builds an if-then-else statement."""
     return f"if {cond}:\n{indent(expr_true)}\nelse:\n{indent(expr_false)}"
 
+def str_check_landscape(pos_x, pos_y, comp, landscape_type):
+    """Checks for a specific landscape type at a given position."""
+    return f"landscape[11+{pos_x}, 11+{pos_y}] {comp} {landscape_type}"
+
 # -----------------------------------------------------------------------------
 # 3. GRAMMAR CONFIGURATION
 # -----------------------------------------------------------------------------
@@ -135,6 +140,7 @@ pset.addPrimitive(str_if_then_else, [Condition, Expr, Expr], Expr)
 pset.addPrimitive(str_sequence, [Expr, Expr], Expr)
 pset.addPrimitive(str_set_action, [Key, Bool], Expr)
 pset.addPrimitive(str_check_enemy, [Position, Position, Comparator, EnemyType], Condition)
+pset.addPrimitive(str_check_landscape, [Position, Position, Comparator, LandscapeType], Condition)
 pset.addTerminal("pass", Expr, name="NoOp")
 
 # Basic Senses (Provided directly by the environment variables)
@@ -169,7 +175,20 @@ pset.addTerminal("Sprite.KIND_GREEN_KOOPA", EnemyType, name="GreenKoopa")
 pset.addTerminal("Sprite.KIND_GREEN_KOOPA_WINGED", EnemyType, name="GreenKoopaWinged")
 pset.addTerminal("Sprite.KIND_BULLET_BILL", EnemyType, name="BulletBill")
 pset.addTerminal("Sprite.KIND_SPIKY", EnemyType, name="Spiky")
-pset.addTerminal("Sprite.KIND_SPIKY_WINGED", EnemyType, name="SpikyWinged") 
+pset.addTerminal("Sprite.KIND_SPIKY_WINGED", EnemyType, name="SpikyWinged")
+pset.addTerminal("Sprite.KIND_FLOWER", EnemyType, name="Flower")
+pset.addTerminal("Sprite.KIND_SHELL", EnemyType, name="Shell")
+
+# Terminals for landscape types
+pset.addTerminal("0", LandscapeType, name="Empty")
+pset.addTerminal("-11", LandscapeType, name="SoftObstacle")
+pset.addTerminal("-10", LandscapeType, name="HardObstacle")
+pset.addTerminal("14", LandscapeType, name="Mushroom")
+pset.addTerminal("15", LandscapeType, name="FireFlower")   
+pset.addTerminal("25", LandscapeType, name="Fireball") 
+pset.addTerminal("16", LandscapeType, name="Brick")
+pset.addTerminal("21", LandscapeType, name="QuestionBrick")
+pset.addTerminal("20", LandscapeType, name="EnemyObstacle")
 
 
 # TODO: Add enemy detection primitives

@@ -19,6 +19,8 @@ class Sprite(IntEnum):
     KIND_BULLET_BILL = 8
     KIND_SPIKY = 9
     KIND_SPIKY_WINGED = 10
+    KIND_FLOWER = 12
+    KIND_SHELL = 13
 
 class CodeAgent(marioai.Agent):
     def __init__(self):
