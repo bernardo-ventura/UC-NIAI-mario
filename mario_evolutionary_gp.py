@@ -120,6 +120,10 @@ def str_check_enemy(pos_x, pos_y, comp, enemy_type):
     """Checks for a specific enemy type at a given position."""
     return f"enemies[11+{pos_x}, 11+{pos_y}] {comp} {enemy_type}"
 
+def str_if_then_else(cond, expr_true, expr_false):
+    """Builds an if-then-else statement."""
+    return f"if {cond}:\n{indent(expr_true)}\nelse:\n{indent(expr_false)}"
+
 # -----------------------------------------------------------------------------
 # 3. GRAMMAR CONFIGURATION
 # -----------------------------------------------------------------------------
@@ -127,6 +131,7 @@ pset = gp.PrimitiveSetTyped("MAIN", [], Expr)
 
 # Core Logic Primitives
 pset.addPrimitive(str_if_then, [Condition, Expr], Expr)
+pset.addPrimitive(str_if_then_else, [Condition, Expr, Expr], Expr)
 pset.addPrimitive(str_sequence, [Expr, Expr], Expr)
 pset.addPrimitive(str_set_action, [Key, Bool], Expr)
 pset.addPrimitive(str_check_enemy, [Position, Position, Comparator, EnemyType], Condition)
