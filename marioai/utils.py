@@ -3,6 +3,18 @@ import numpy
 
 __all__ = ['extractObservation', 'Observation']
 
+def safe_float(s):
+    """Helper function to parse float with server bug workaround.
+    
+    Server Java sometimes sends 'O' instead of '0' when FPS is limited.
+    This function tries normal float parsing first, then applies fix if needed.
+    """
+    try:
+        return float(s)
+    except ValueError:
+        # Server bug: replace 'O' with '0' and retry
+        return float(s.replace('O', '0').replace('o', '0'))
+
 class Observation(object):
     """
     Structured observation data from the environment.
@@ -77,7 +89,7 @@ def extractObservation(data):
     parts = data.split(' ')
     if parts[0] == 'FIT':
         status = int(parts[1])
-        distance = float(parts[2])
+        distance = safe_float(parts[2])
         timeLeft = int(parts[3])
         marioMode = int(parts[4])
         coins = int(parts[5])
@@ -159,15 +171,19 @@ def extractObservation(data):
         # So `k` (which is 487) is used as index `data[487]`.
         # This is correct.
         
-        marioFloats = (float(parts[487]), float(parts[488]))
+        marioFloats = (safe_float(parts[487]), safe_float(parts[488]))
         
         # k += 2 -> 489
         current_idx = 489
         enemiesFloats = []
         while current_idx < len(parts):
-             # basic protection against empty strings at the end
+             # basic protection against empty strings and non-numeric values
             if parts[current_idx]:
-                enemiesFloats.append(float(parts[current_idx]))
+                try:
+                    enemiesFloats.append(safe_float(parts[current_idx]))
+                except (ValueError, AttributeError):
+                    # Skip non-numeric values like 'false' that server sometimes sends
+                    pass
             current_idx += 1
 
         enemiesFloats = [ (enemiesFloats[i], enemiesFloats[i+1], enemiesFloats[i+2]) for i in range(0, len(enemiesFloats), 3) ]
