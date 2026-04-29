@@ -283,10 +283,10 @@ if __name__ == "__main__":
 
     # Parâmetros evolutivos
     # NUM_ITERATIONS = 50  # Will become GENERATIONS
-    GENERATIONS = 100
+    GENERATIONS = 10
     POP_SIZE = 100
     CXPB = 0.8  # Crossover probability
-    MUTPB = 0.2  # Mutation probability
+    MUTPB = 0.8  # Mutation probability
 
     # Dados do experimento
     experiment_data = {
@@ -322,14 +322,21 @@ if __name__ == "__main__":
         for i in range(1, len(offspring), 2):
             if random.random() < CXPB:
                 toolbox.mate(offspring[i-1], offspring[i])
+                
+                del offspring[i-1].fitness.values
+                del offspring[i].fitness.values
 
         # Mutação
         for ind in offspring:
             if random.random() < MUTPB:
                 toolbox.mutate(ind)
 
+                del ind.fitness.values
+                
         # Avaliação dos descendentes
-        for ind in offspring:
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+        for ind in invalid_ind:
             ind.fitness.values = (evaluate_gp_individual(ind),)
 
         # Estatísticas da geração

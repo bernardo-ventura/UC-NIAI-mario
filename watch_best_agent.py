@@ -41,7 +41,7 @@ def watch_agent(agent_file="data/gp_best_agents/mario_best_evolved.py", num_epis
     
     # Criar experimento
     exp = marioai.Experiment(task, agent)
-    exp.max_fps = 120  # Sem limite de FPS (igual random_agent.py)
+    exp.max_fps = 30  # Sem limite de FPS (igual random_agent.py)
     
     print("\n🎬 Iniciando visualização...")
     print("💡 Dica: Feche a janela do jogo para parar\n")
