@@ -1,0 +1,23 @@
+
+# Evolved Mario Controller (Evolutionary Algorithm)
+# Fitness: -43082319.10000029
+
+def corre(action, landscape, enemies, can_jump, on_ground, Mario, Sprite, **kwargs):
+    if enemies[11+-1, 11+1] == Sprite.KIND_GREEN_KOOPA:
+        if on_ground:
+            action[Mario.KEY_LEFT] = int(True)
+    else:
+        pass
+        pass
+        pass
+    if landscape[11+-1, 11+1] == 20:
+        if enemies[11+-1, 11+-1] != Sprite.KIND_GOOMBA_WINGED:
+            action[Mario.KEY_SPEED] = int(True)
+            action[Mario.KEY_JUMP] = int(True)
+    else:
+        if landscape[11+1, 11+0] != -11:
+            action[Mario.KEY_RIGHT] = int(True)
+            if landscape[11+0, 11+1] != 0:
+                action[Mario.KEY_JUMP] = int(True)
+        else:
+            action[Mario.KEY_SPEED] = int(True)

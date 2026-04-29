@@ -283,7 +283,7 @@ if __name__ == "__main__":
 
     # Parâmetros evolutivos
     # NUM_ITERATIONS = 50  # Will become GENERATIONS
-    GENERATIONS = 3
+    GENERATIONS = 100
     POP_SIZE = 100
     CXPB = 0.8  # Crossover probability
     MUTPB = 0.2  # Mutation probability
@@ -333,10 +333,10 @@ if __name__ == "__main__":
             ind.fitness.values = (evaluate_gp_individual(ind),)
 
         # Estatísticas da geração
-        fitnesses = [ind.fitness.values[0] for ind in population if ind.fitness.valid]
+        fitnesses = [ind.fitness.values[0] for ind in offspring]
         avg_fitness = float(np.mean(fitnesses)) if fitnesses else 0.0
         std_fitness = float(np.std(fitnesses)) if fitnesses else 0.0
-        best_gen = max(population, key=lambda ind: ind.fitness.values[0])
+        best_gen = max(offspring, key=lambda ind: ind.fitness.values[0])
         best_gen_fitness = best_gen.fitness.values[0]
         print(f"Fitness médio: {avg_fitness:.2f} | Desvio padrão: {std_fitness:.2f} | Melhor: {best_gen_fitness}")
 

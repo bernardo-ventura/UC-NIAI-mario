@@ -9,6 +9,9 @@ class MoveForwardTask(marioai.Task):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "MoveForward"
+        
+        self.max_x = 0
+        self.steps_without_progress = 0
 
 
     def compute_reward(self, current_obs, last_obs):
@@ -33,8 +36,27 @@ class MoveForwardTask(marioai.Task):
         
         reward = 0
         
-        if last_obs is not None:
-          distance = current_obs.mario_pos[0] - last_obs.mario_pos[0]
-          reward += distance * 1.0
+        # if last_obs is not None:
+        #   distance = current_obs.mario_pos[0] - last_obs.mario_pos[0]
+        #   reward += distance * 1.0
+        
+        # global progress
+        current_x = current_obs.mario_pos[0]
+        if current_x > self.max_x:
+          self.max_x = current_x
+          self.steps_without_progress = 0
+          reward += 5  # bônus por progresso real
+        else:
+          self.steps_without_progress += 1
+
+        # penalize for being stuck
+        if self.steps_without_progress > 10:
+          reward -= 0.5 * self.steps_without_progress
+              # Mario está no ar -> provavelmente pulou
+          if not current_obs.on_ground:
+            reward += 3
+          
+        # time penalty to encourage faster solutions
+        reward -= 0.1
         
         return reward
