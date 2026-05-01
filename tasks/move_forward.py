@@ -34,32 +34,38 @@ class MoveForwardTask(marioai.Task):
           undesirable behaviors (e.g., cowardice or reckless actions).
         """
         
-        reward = 0
-        
-        if last_obs is not None:
-          distance = current_obs.mario_pos[0] - last_obs.mario_pos[0]
-          reward += distance * 1.0
-        
-        # global progress
+        # Atualizar progresso máximo
         current_x = current_obs.mario_pos[0]
         if current_x > self.max_x:
           self.max_x = current_x
           self.steps_without_progress = 0
-          reward += 5  # bônus por progresso real
         else:
           self.steps_without_progress += 1
+        
+        # Fitness baseada principalmente na distância máxima alcançada
+        reward = self.max_x/1000
+        
+        # Penalização fixa se ficou muito tempo parado (sem acumular por frame)
+        if self.steps_without_progress > 100:
+          reward -= 1  # Penalização fixa por ficar preso
+        elif self.steps_without_progress > 50:
+          reward -= 0.25  # Penalização moderada por progresso lento
           
-        if current_obs.status == 1:  # morreu
-          reward += 1000
+        # Bônus por pular (incentiva exploração vertical)
+        # if last_obs is not None and current_obs.mario_pos[1] < last_obs.mario_pos[1]:
+        #   reward += 2
 
-        # penalize for being stuck
-        # if self.steps_without_progress > 10:
-        #   reward -= min(0.5 * self.steps_without_progress, 10)
-        #       # Mario está no ar -> provavelmente pulou
-        #   if not current_obs.on_ground:
-        #     reward += 3
-          
-        # # time penalty to encourage faster solutions
-        # reward -= 0.1
+        # Bonus por movimento no ar (incentiva pulo diagonal)
+        if not current_obs.on_ground:
+            if last_obs is not None:
+                distance = current_obs.mario_pos[0] - last_obs.mario_pos[0]
+                if distance > 0:
+                    reward += distance  # Movimento no ar vale mais
+                  
+        # Bônus/penalização por status final
+        if current_obs.status == 1:  # Completou o nível
+          reward += 1000
+        elif current_obs.status == -1:  # Morreu
+          reward -= 500
         
         return reward

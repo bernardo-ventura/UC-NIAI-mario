@@ -1,0 +1,7 @@
+{
+  "seed": 42,
+  "generations": 10,
+  "population_size": 100,
+  "crossover_prob": 0.8,
+  "mutation_prob": 0.8
+}

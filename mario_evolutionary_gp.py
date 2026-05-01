@@ -19,6 +19,9 @@ import copy
 import json
 from pathlib import Path
 
+import time
+from datetime import datetime
+
 # USER IMPORTS (Assuming evaluate is provided in your evaluation.py)
 from evaluation import evaluate
 
@@ -265,56 +268,85 @@ def save_best_individual(best_ind, toolbox, filename_py="mario_best_evolved.py")
 def corre(action, landscape, enemies, can_jump, on_ground, Mario, Sprite, **kwargs):
 {indent(code_body)}
 """
-    Path("data/gp_best_agents").mkdir(parents=True, exist_ok=True)
-    output_path = Path("data/gp_best_agents") / filename_py
+    output_path = Path(filename_py)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
         f.write(full_code)
     print(f"Saved executable code to '{output_path}'")
-
+    
 # -----------------------------------------------------------------------------
-# 6. MAIN EXECUTION: EVOLUTIONARY ALGORITHM (Currently Random Search)
+# -----------------------------------------------------------------------------
+# 6. MAIN EXECUTION: EVOLUTIONARY ALGORITHM
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
+
     if len(sys.argv) < 2:
         print("Usage: python mario_evolutionary_gp.py <seed>")
         sys.exit(1)
 
-    random.seed(int(sys.argv[1]))
+    seed = int(sys.argv[1])
+    random.seed(seed)
 
-    # Parâmetros evolutivos
-    # NUM_ITERATIONS = 50  # Will become GENERATIONS
-    GENERATIONS = 10
+    # ===== RUN SETUP =====
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_dir = Path("data/runs") / f"run_{timestamp}_seed_{seed}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    log_file = run_dir / "experiment.log"
+    config_file = run_dir / "config.json"
+
+    def log(msg):
+        print(msg)
+        with open(log_file, "a") as f:
+            f.write(msg + "\n")
+
+    # ===== PARAMETERS =====
+    GENERATIONS = 50
     POP_SIZE = 100
-    CXPB = 0.8  # Crossover probability
-    MUTPB = 0.8  # Mutation probability
+    CXPB = 0.8
+    MUTPB = 0.8
 
-    # Dados do experimento
+    config_data = {
+        "seed": seed,
+        "generations": GENERATIONS,
+        "population_size": POP_SIZE,
+        "crossover_prob": CXPB,
+        "mutation_prob": MUTPB
+    }
+
+    with open(config_file, "w") as f:
+        json.dump(config_data, f, indent=2)
+
+    # ===== EXPERIMENT DATA =====
     experiment_data = {
-        "seed": int(sys.argv[1]),
+        "seed": seed,
         "generations": [],
         "final": {}
     }
 
+    # ===== INITIAL POPULATION =====
     population = [toolbox.individual() for _ in range(POP_SIZE)]
 
-    print("="*70)
-    print("Mario AI - Evolutionary Genetic Programming")
-    print("="*70)
-    print(f"Seed: {sys.argv[1]}")
-    print(f"Generations: {GENERATIONS} (Evolutionary Algorithm)")
-    print("-"*70)
-    print("Evaluating initial population...")
+    log("="*70)
+    log("Mario AI - Evolutionary Genetic Programming")
+    log("="*70)
+    log(f"Seed: {seed}")
+    log(f"Generations: {GENERATIONS}")
+    log("-"*70)
+    log("Evaluating initial population...")
+
     for idx, ind in enumerate(population):
-        print(f"  Evaluating individual {idx+1}/{len(population)}")
         ind.fitness.values = (evaluate_gp_individual(ind),)
 
     best_individual = max(population, key=lambda ind: ind.fitness.values[0])
-    best_fitness = best_individual.fitness.values[0]
+    best_ever = best_individual.fitness.values[0]
 
+    # ===== EVOLUTION LOOP =====
     for gen in range(GENERATIONS):
-        print(f"\n--- GENERATION {gen+1}/{GENERATIONS} ---")
 
-        # Evolução
+        log(f"\n--- GENERATION {gen+1}/{GENERATIONS} ---")
+
+        # Seleção + clone
         selected = toolbox.select(population, len(population))
         offspring = list(map(toolbox.clone, selected))
 
@@ -322,7 +354,6 @@ if __name__ == "__main__":
         for i in range(1, len(offspring), 2):
             if random.random() < CXPB:
                 toolbox.mate(offspring[i-1], offspring[i])
-                
                 del offspring[i-1].fitness.values
                 del offspring[i].fitness.values
 
@@ -330,63 +361,93 @@ if __name__ == "__main__":
         for ind in offspring:
             if random.random() < MUTPB:
                 toolbox.mutate(ind)
-
                 del ind.fitness.values
-                
-        # Avaliação dos descendentes
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
+        # Avaliação
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         for ind in invalid_ind:
             ind.fitness.values = (evaluate_gp_individual(ind),)
+            
+        best_offspring = max(offspring, key=lambda ind: ind.fitness.values[0])
+        best_offspring_fitness = best_offspring.fitness.values[0]
 
-        # Estatísticas da geração
-        fitnesses = [ind.fitness.values[0] for ind in offspring]
-        avg_fitness = float(np.mean(fitnesses)) if fitnesses else 0.0
-        std_fitness = float(np.std(fitnesses)) if fitnesses else 0.0
-        best_gen = max(offspring, key=lambda ind: ind.fitness.values[0])
+        # ===== ELITISMO =====
+        elite = tools.selBest(population, 1)
+        population = elite + offspring[:-1]
+
+        # ===== MÉTRICAS (CORRETAS) =====
+        fitnesses = [ind.fitness.values[0] for ind in population]
+
+        best_gen = max(population, key=lambda ind: ind.fitness.values[0])
         best_gen_fitness = best_gen.fitness.values[0]
-        print(f"Fitness médio: {avg_fitness:.2f} | Desvio padrão: {std_fitness:.2f} | Melhor: {best_gen_fitness}")
 
-        # Salvar estatísticas
+        avg_fitness = float(np.mean(fitnesses))
+        std_fitness = float(np.std(fitnesses))
+        min_fitness = float(np.min(fitnesses))
+        median_fitness = float(np.median(fitnesses))
+
+        # diversidade simples
+        diversity = len(set(map(str, population))) / len(population)
+
+        # taxa de mudança
+        invalid_ratio = len(invalid_ind) / len(population)
+
+        # atualizar melhor global
+        if best_gen_fitness > best_ever:
+            best_ever = best_gen_fitness
+            best_individual = copy.deepcopy(best_gen)
+            log(f">>> NEW BEST EVER: {best_ever:.2f}")
+            
+            # salvar novo melhor indivíduo
+            save_best_individual(
+                best_individual,
+                toolbox,
+                filename_py=run_dir / f"best_ever_gen_{gen+1}.py"
+            )
+
+        # ===== LOG =====
+        log(
+            f"[Gen {gen+1}] "
+            f"offspring_best={best_offspring_fitness:.2f} | "
+            f"pop_best={best_gen_fitness:.2f} | "
+            f"avg={avg_fitness:.2f} | "
+            f"median={median_fitness:.2f} | "
+            f"min={min_fitness:.2f} | "
+            f"std={std_fitness:.2f} | "
+            f"diversity={diversity:.2f} | "
+            f"invalid_ratio={invalid_ratio:.2f} | "
+            f"best_ever={best_ever:.2f}"
+        )
+
+        # salvar métricas estruturadas
         experiment_data["generations"].append({
             "gen": gen+1,
             "best": best_gen_fitness,
             "avg": avg_fitness,
-            "std": std_fitness
+            "median": median_fitness,
+            "min": min_fitness,
+            "std": std_fitness,
+            "diversity": diversity,
+            "invalid_ratio": invalid_ratio,
+            "best_ever": best_ever
         })
 
-        # Salvar melhor indivíduo a cada 5 gerações
-        if (gen+1) % 5 == 0:
-            save_best_individual(best_gen, toolbox, filename_py=f"mario_best_gen{gen+1}.py")
+    # ===== FINAL =====
+    log("\n" + "="*70)
+    log(f"Final Best Fitness: {best_ever:.2f}")
 
-        # Elitismo
-        elite = tools.selBest(population, 1)
-        population = elite + offspring[:-1]
+    save_best_individual(
+        best_individual,
+        toolbox,
+        filename_py=run_dir / "final_best.py"
+    )
 
-        # Atualizar melhor global
-        if best_gen.fitness.values[0] > best_fitness:
-            best_fitness = best_gen.fitness.values[0]
-            best_individual = copy.deepcopy(best_gen)
-            print(f">>> New BEST EVER: {best_fitness}")
+    experiment_data["final"] = {
+        "fitness": float(best_ever)
+    }
 
-    print("\n" + "="*70)
-    if best_individual:
-        print(f"Final Best Fitness: {best_fitness}")
-        save_best_individual(best_individual, toolbox)
-        # Dados finais (exemplo: fitness, distância, kills)
-        experiment_data["final"] = {
-            "fitness": float(best_fitness),
-            # Placeholder: adicione coleta real de distância/kills se disponível
-            "distance": None,
-            "kills": None
-        }
-    else:
-        print("No valid programs were found or evaluated.")
-
-    # Salvar JSON do experimento
-    Path("data/gp_best_agents").mkdir(parents=True, exist_ok=True)
-    json_path = Path("data/gp_best_agents") / f"experiment_seed{sys.argv[1]}.json"
-    with open(json_path, "w") as f:
+    with open(run_dir / "experiment_summary.json", "w") as f:
         json.dump(experiment_data, f, indent=2)
-    print(f"\n[LOG] Dados do experimento salvos em {json_path}")
-    print("="*70)
+
+    log(f"\n[LOG] Run salvo em: {run_dir}")
+    log("="*70)
