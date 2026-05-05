@@ -5,6 +5,7 @@ Processa dados brutos e gera tabela conforme Paper Section 5.3
 """
 
 import json
+import csv
 import numpy as np
 from pathlib import Path
 
@@ -176,6 +177,50 @@ def main():
     
     print("\n" + "="*80)
     print("✅ Analysis complete!")
+    print("="*80)
+    
+    # ========================================================================
+    # SALVAR TABELA EM CSV
+    # ========================================================================
+    
+    csv_file = Path("data/table2_section5.csv")
+    csv_file.parent.mkdir(exist_ok=True)
+    
+    with open(csv_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        
+        # Cabeçalho
+        writer.writerow(['Metric', 'Random_Mean', 'Random_STD', 'Evolved_Mean', 'Evolved_STD', 'Improvement_%'])
+        
+        # Dados
+        writer.writerow([
+            'Levels_Cleared_%',
+            f'{random_completion_rate:.1f}',
+            f'{random_completion_std:.1f}',
+            f'{evolved_completion_rate:.1f}',
+            f'{evolved_completion_std:.1f}',
+            'inf' if completion_improvement == float('inf') else f'{completion_improvement:.1f}'
+        ])
+        
+        writer.writerow([
+            'Max_Distance_px',
+            f'{random_dist_mean:.1f}',
+            f'{random_dist_std:.1f}',
+            f'{evolved_dist_mean:.1f}',
+            f'{evolved_dist_std:.1f}',
+            f'{distance_improvement:.1f}'
+        ])
+        
+        writer.writerow([
+            'Enemies_Killed',
+            f'{random_kills_mean:.2f}',
+            f'{random_kills_std:.2f}',
+            f'{evolved_kills_mean:.2f}',
+            f'{evolved_kills_std:.2f}',
+            'inf' if kills_improvement == float('inf') else f'{kills_improvement:.1f}'
+        ])
+    
+    print(f"\n💾 Table 2 saved to: {csv_file}")
     print("="*80)
 
 
