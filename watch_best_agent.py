@@ -9,9 +9,10 @@ Uso:
 """
 
 import sys
+
 import marioai
 from agents import CodeAgent
-from tasks import MoveForwardTask
+from tasks import MoveForwardTask, HunterTask
 
 def watch_agent(agent_file="data/gp_best_agents/mario_best_evolved.py", num_episodes=1):
     """
@@ -38,6 +39,7 @@ def watch_agent(agent_file="data/gp_best_agents/mario_best_evolved.py", num_epis
     
     # Criar task COM VISUALIZAÇÃO! 🎮 (mesma config do random_agent.py)
     task = MoveForwardTask(visualization=True)
+    # task = HunterTask(visualization=True)
     
     # Criar experimento
     exp = marioai.Experiment(task, agent)

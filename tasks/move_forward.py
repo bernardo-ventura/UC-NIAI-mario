@@ -13,6 +13,11 @@ class MoveForwardTask(marioai.Task):
         self.max_x = 0
         self.steps_without_progress = 0
 
+    def reset(self):
+        """Reset task state between e/pisodes"""
+        super().reset()
+        self.max_x = 0
+        self.steps_without_progress = 0
 
     def compute_reward(self, current_obs, last_obs):
         """
@@ -52,8 +57,8 @@ class MoveForwardTask(marioai.Task):
           reward -= 0.25  # Penalização moderada por progresso lento
           
         # Bônus por pular (incentiva exploração vertical)
-        # if last_obs is not None and current_obs.mario_pos[1] < last_obs.mario_pos[1]:
-        #   reward += 2
+        if last_obs is not None and current_obs.mario_pos[1] < last_obs.mario_pos[1]:
+          reward += 2
 
         # Bonus por movimento no ar (incentiva pulo diagonal)
         if not current_obs.on_ground:

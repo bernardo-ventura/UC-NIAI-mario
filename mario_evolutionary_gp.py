@@ -3,10 +3,6 @@ Mario AI - Evolutionary Genetic Programming
 ============================================
 Implementação de um Algoritmo Evolutivo usando Programação Genética
 para evoluir controladores autônomos para Super Mario.
-
-Autor: Bernardo Ventura
-Data: 27 de Março de 2026
-Repositório: https://github.com/bernardo-ventura/UC-NIAI-mario
 """
 
 import operator
@@ -301,7 +297,7 @@ if __name__ == "__main__":
             f.write(msg + "\n")
 
     # ===== PARAMETERS =====
-    GENERATIONS = 50
+    GENERATIONS = 30
     POP_SIZE = 100
     CXPB = 0.8
     MUTPB = 0.8

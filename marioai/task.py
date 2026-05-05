@@ -67,6 +67,10 @@ class Task(object):
         sense = self.env.get_sensors()
         # sense is now an Observation namedtuple
         
+        if sense is None:
+            # No data received
+            return None
+        
         if sense.level_scene is None:
             # Fitness packet (no level scene)
             self.reward = sense.distance # Or standard fitness handling
