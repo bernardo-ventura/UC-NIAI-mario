@@ -5,7 +5,9 @@ import sys
 import textwrap
 import pickle
 import copy
+import json
 from pathlib import Path
+from datetime import datetime
 
 # USER IMPORTS (Assuming evaluate is provided in your evaluation.py)
 from evaluation import evaluate
@@ -147,7 +149,7 @@ def corre(action, landscape, enemies, can_jump, on_ground, Mario, Sprite, **kwar
 # -----------------------------------------------------------------------------
 # 5. PERSISTENCE HELPERS
 # -----------------------------------------------------------------------------
-def save_best_individual(best_ind, toolbox, filename_py="mario_best.py"):
+def save_best_individual(best_ind, toolbox, filename_py="data/gp_best_agents/mario_best.py"):
     
     """Saves the best individual as a readable Python script."""
     if best_ind is None:
@@ -157,34 +159,42 @@ def save_best_individual(best_ind, toolbox, filename_py="mario_best.py"):
     code_body = toolbox.compile(best_ind)
     fitness_val = best_ind.fitness.values[0] if best_ind.fitness.valid else "Unknown"
     
-    full_code = f"""
-# Evolved Mario Controller (Random Search)
-# Fitness: {fitness_val}
-
-def corre(action, landscape, enemies, can_jump, on_ground, Mario, Sprite, **kwargs):
+    full_code = f"""def corre(action, landscape, enemies, can_jump, on_ground, Mario, Sprite, **kwargs):
 {indent(code_body)}
 """
-    Path("data/gp_best_agents").mkdir(parents=True, exist_ok=True)
-    output_path = Path("data/gp_best_agents") / filename_py
+    
+    output_path = Path(filename_py)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
     with output_path.open("w") as f:
         f.write(full_code)
-    print(f"Saved executable code to '{filename_py}'")
+    print(f"💾 Saved agent to: {filename_py}")
 
 # -----------------------------------------------------------------------------
 # 6. MAIN EXECUTION: RANDOM SEARCH
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    random.seed(int(sys.argv[1]))
+    seed = int(sys.argv[1])
+    random.seed(seed)
     
-    NUM_ITERATIONS = 50  # Number of random agents to generate and test
+    NUM_ITERATIONS = 30  # 30 gerações para comparar com evolved
     
     best_individual = None
     best_fitness = -float('inf')
     
-    print(f"Starting Random Search for {NUM_ITERATIONS} iterations...")
+    # Histórico para salvar
+    history = {
+        'seed': seed,
+        'pop_size': 1,
+        'n_generations': NUM_ITERATIONS,
+        'strategy': 'random_search',
+        'generations': []
+    }
+    
+    print(f"Starting Random Search for {NUM_ITERATIONS} iterations (generations)...")
     
     for i in range(NUM_ITERATIONS):
-        print(f"\n--- Iteration {i+1}/{NUM_ITERATIONS} ---")
+        print(f"\n--- Generation {i+1}/{NUM_ITERATIONS} ---")
         
         # 1: Generate a random individual
         current_individual = toolbox.individual()
@@ -204,10 +214,37 @@ if __name__ == "__main__":
             # We copy the individual so later changes (if we had them) wouldn't affect our best
             best_individual = copy.deepcopy(current_individual)
             print(f">>> New Best Found! Score: {best_fitness}")
+        
+        # 5: Salvar estatísticas desta geração
+        gen_stats = {
+            'gen': i + 1,
+            'best': fitness_score,
+            'avg': fitness_score,  # Apenas 1 individual por geração
+            'median': fitness_score,
+            'min': fitness_score,
+            'std': 0.0,
+            'diversity': 0.0,
+            'invalid_ratio': 0.0,
+            'best_ever': best_fitness
+        }
+        history['generations'].append(gen_stats)
             
     if best_individual:
-        print(f"Final Best Fitness Found: {best_fitness}")
-        # 5: Save the best individual using the helper function
-        save_best_individual(best_individual, toolbox)
+        print(f"\nFinal Best Fitness Found: {best_fitness}")
+        
+        # Criar diretório de saída (formato compatível com evolved)
+        output_dir = Path(f"experiments/random_search_baseline/random_seed_{seed}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Salvar best individual
+        save_best_individual(best_individual, toolbox, filename_py=str(output_dir / "final_best.py"))
+        
+        # Salvar experiment_summary.json (formato compatível)
+        summary_file = output_dir / "experiment_summary.json"
+        with open(summary_file, 'w') as f:
+            json.dump(history, f, indent=2)
+        
+        print(f"💾 Summary saved to: {summary_file}")
+        
     else:
         print("No valid programs were found or evaluated.")

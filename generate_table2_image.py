@@ -149,15 +149,18 @@ def main():
               fontsize=14, fontweight='bold', pad=20)
     
     # Salvar
-    output_file = Path('data/table2_section5.png')
-    output_file.parent.mkdir(exist_ok=True)
+    output_png = Path('data/table2_section5.png')
+    output_jpg = Path('data/table2_section5.jpg')
+    output_png.parent.mkdir(exist_ok=True)
     
     plt.tight_layout()
-    plt.savefig(output_file, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.savefig(output_png, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.savefig(output_jpg, dpi=300, bbox_inches='tight', facecolor='white')
     
-    print(f"\n✅ Table image saved to: {output_file}")
+    print(f"\n✅ Table images saved:")
+    print(f"   PNG: {output_png}")
+    print(f"   JPG: {output_jpg}")
     print(f"   Resolution: 300 DPI (high quality)")
-    print(f"   Format: PNG")
     
     plt.close()
     

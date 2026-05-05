@@ -1,7 +1,7 @@
 """
 Section 5 - Evaluation and Comparative Analysis
 ===============================================
-Compara 5 Evolved Agents vs 1 Random Agent em 3 níveis diferentes.
+Compara 5 Evolved Agents vs 5 Random Agents em 3 níveis diferentes.
 """
 
 import sys
@@ -13,8 +13,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from agents import CodeAgent
 from tasks import MoveForwardTask
 import marioai
-from mario_random_search_gp import pset, safe_gen_grow, indent
-from deap import creator, base, gp
 
 # ============================================================================
 # CONFIGURAÇÃO
@@ -87,25 +85,22 @@ def load_evolved_agents():
     return agents[:5]  # Garantir 5 agents
 
 
-def generate_random_agent():
-    """Gera 1 random agent como baseline."""
-    if not hasattr(creator, "FitnessMax"):
-        creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    if not hasattr(creator, "Individual"):
-        creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax)
+def load_random_agents():
+    """Carrega os 5 random agents (best de cada seed) do random search baseline."""
+    agents = []
+    runs_dir = Path("experiments/random_search_baseline")
     
-    toolbox = base.Toolbox()
-    toolbox.register("compile", gp.compile, pset=pset)
+    for agent_file in sorted(runs_dir.glob("*/final_best.py")):
+        with open(agent_file, 'r') as f:
+            code = f.read()
+        agent = CodeAgent()
+        agent.action_function = code
+        
+        # Extrair seed do nome da pasta
+        agent_id = agent_file.parent.name
+        agents.append({'id': agent_id, 'agent': agent})
     
-    expr = safe_gen_grow(pset, min_=1, max_=3, type_=None)
-    individual = creator.Individual(expr)
-    code_body = toolbox.compile(individual)
-    full_code = f"def corre(action, landscape, enemies, can_jump, on_ground, Mario, Sprite, **kwargs):\n{indent(code_body)}"
-    
-    agent = CodeAgent()
-    agent.action_function = full_code
-    
-    return {'id': 'random_baseline', 'agent': agent}
+    return agents[:5]  # Garantir 5 agents
 
 
 def run_trial(agent, task, level_config):
@@ -163,10 +158,10 @@ def main():
     print("📊 SECTION 5 - EVALUATION AND COMPARATIVE ANALYSIS")
     print("="*80)
     print("Evolved Agents: 5")
-    print("Random Baseline: 1")
+    print("Random Agents: 5")
     print(f"Levels: {len(LEVELS)}")
     print(f"Trials per agent per level: {N_TRIALS}")
-    print(f"Total runs: 6 agents × {len(LEVELS)} levels × {N_TRIALS} trials = {6 * len(LEVELS) * N_TRIALS}")
+    print(f"Total runs: 10 agents × {len(LEVELS)} levels × {N_TRIALS} trials = {10 * len(LEVELS) * N_TRIALS}")
     print("="*80)
     
     # 1. Carregar evolved agents
@@ -176,13 +171,15 @@ def main():
     for ag in evolved_agents:
         print(f"      - {ag['id']}")
     
-    # 2. Gerar random agent
-    print("\n2️⃣ Generating random baseline agent...")
-    random_agent = generate_random_agent()
-    print(f"   ✓ Generated {random_agent['id']}")
+    # 2. Carregar random agents
+    print("\n2️⃣ Loading random baseline agents...")
+    random_agents = load_random_agents()
+    print(f"   ✓ Loaded {len(random_agents)} random agents")
+    for ag in random_agents:
+        print(f"      - {ag['id']}")
     
     # 3. Preparar lista de todos os agents
-    all_agents = evolved_agents + [random_agent]
+    all_agents = evolved_agents + random_agents
     
     # 4. Conectar ao servidor e criar task reutilizável
     print("\n3️⃣ Connecting to Mario server...")
@@ -190,7 +187,7 @@ def main():
     print("   ✓ Connected")
     
     # 5. Coletar dados
-    print(f"\n4️⃣ Running evaluation ({6 * len(LEVELS) * N_TRIALS} trials)...")
+    print(f"\n4️⃣ Running evaluation ({10 * len(LEVELS) * N_TRIALS} trials)...")
     print()
     
     all_results = []
@@ -198,7 +195,7 @@ def main():
     current_run = 0
     
     for agent_info in all_agents:
-        agent_type = 'evolved' if agent_info['id'] != 'random_baseline' else 'random'
+        agent_type = 'evolved' if 'agent_seed' in agent_info['id'] else 'random'
         
         for level in LEVELS:
             for trial in range(1, N_TRIALS + 1):
